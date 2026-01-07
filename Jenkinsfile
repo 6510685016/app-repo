@@ -47,19 +47,6 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan (Docker Images)') {
-            steps {
-                sh '''
-                  trivy image --severity HIGH,CRITICAL \
-                    --exit-code 1 \
-                    gitops-backend:${TAG}
-
-                  trivy image --severity HIGH,CRITICAL \
-                    --exit-code 1 \
-                    gitops-frontend:${TAG}
-                '''
-            }
-        }
 
         stage('Trivy Scan (Docker Images)') {
             steps {
