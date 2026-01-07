@@ -23,11 +23,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                      sonar-scanner \
+                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=gitops-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
+                        -Dsonar.sources=. 
                     '''
                 }
             }
