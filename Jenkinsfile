@@ -23,13 +23,19 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=gitops-app \
-                        -Dsonar.sources=. 
+                    docker run --rm \
+                    -v "$PWD:/usr/src" \
+                    -w /usr/src \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=gitops-app \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
+
 
         stage('Build Docker Images (docker compose)') {
             steps {
