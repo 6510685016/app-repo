@@ -19,11 +19,39 @@ pipeline {
 
     stages {
 
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                      sonar-scanner \
+                        -Dsonar.projectKey=gitops-app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Images (docker compose)') {
             steps {
                 sh '''
                   echo "Building images with TAG=${TAG}"
                   docker compose build
+                '''
+            }
+        }
+
+        stage('Trivy Scan (Docker Images)') {
+            steps {
+                sh '''
+                  trivy image --severity HIGH,CRITICAL \
+                    --exit-code 1 \
+                    gitops-backend:${TAG}
+
+                  trivy image --severity HIGH,CRITICAL \
+                    --exit-code 1 \
+                    gitops-frontend:${TAG}
                 '''
             }
         }
