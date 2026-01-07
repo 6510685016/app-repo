@@ -24,12 +24,13 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                     docker run --rm \
+                    --network host \
                     -v "$PWD:/usr/src" \
                     -w /usr/src \
                     sonarsource/sonar-scanner-cli \
                     -Dsonar.projectKey=gitops-app \
                     -Dsonar.sources=. \
-                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.host.url=http://localhost:9000 \
                     -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
