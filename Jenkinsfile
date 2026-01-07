@@ -31,13 +31,11 @@ pipeline {
         stage('Tag & Push Images to Nexus') {
             steps {
                 sh '''
-                  docker tag gitops-backend:${TAG} \
-                    localhost:8081/docker-hosted/gitops-backend:${TAG}
-                  docker push localhost:8081/docker-hosted/gitops-backend:${TAG}
+                docker tag gitops-backend:${TAG} localhost:8082/gitops-backend:${TAG}
+                docker tag gitops-frontend:${TAG} localhost:8082/gitops-frontend:${TAG}
 
-                  docker tag gitops-frontend:${TAG} \
-                    localhost:8081/docker-hosted/gitops-frontend:${TAG}
-                  docker push localhost:8081/docker-hosted/gitops-frontend:${TAG}
+                docker push localhost:8082/gitops-backend:${TAG}
+                docker push localhost:8082/gitops-frontend:${TAG}
                 '''
             }
         }
@@ -46,7 +44,7 @@ pipeline {
             steps {
                 sh '''
                   rm -rf gitops
-                  git clone https://<TOKEN>@github.com/6510685016/gitops-repo.git gitops
+                  git clone https://github.com/6510685016/gitops-repo.git gitops
                   cd gitops
 
                   sed -i "s|image:.*gitops-backend.*|image: localhost:8081/docker-hosted/gitops-backend:${TAG}|" apps/backend/deployment.yaml
