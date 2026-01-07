@@ -19,17 +19,11 @@ pipeline {
 
     stages {
 
-        stage('Checkout Source') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build Docker Images (docker-compose)') {
+        stage('Build Docker Images (docker compose)') {
             steps {
                 sh '''
                   export TAG=${TAG}
-                  docker-compose build
+                  docker compose build
                 '''
             }
         }
