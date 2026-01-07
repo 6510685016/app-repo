@@ -48,21 +48,30 @@ pipeline {
         }
 
 
-        stage('Trivy Scan (Docker Images)') {
+        stage('Trivy Scan - Frontend') {
             steps {
+                dir('frontend') {
                 sh '''
-                docker run --rm \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                aquasec/trivy:latest \
-                image --severity HIGH,CRITICAL --exit-code 1 gitops-backend:${TAG}
-
-                docker run --rm \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                aquasec/trivy:latest \
-                image --severity HIGH,CRITICAL --exit-code 1 gitops-frontend:${TAG}
+                    rm -rf node_modules
+                    npm install
+                    trivy fs --severity HIGH,CRITICAL --exit-code 1 .
                 '''
+                }
             }
         }
+
+        stage('Trivy Scan - Backend') {
+            steps {
+                dir('backend') {
+                sh '''
+                    rm -rf node_modules
+                    npm install
+                    trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+                '''
+                }
+            }
+        }
+
 
 
         stage('Update GitOps Repo') {
