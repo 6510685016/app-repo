@@ -2,12 +2,14 @@ version: '3.8'
 
 services:
   backend:
+    image: gitops-backend:${TAG}
     build: ./backend
     container_name: simple-backend
     ports:
       - "5000:5000"
 
   frontend:
+    image: gitops-frontend:${TAG}
     build: ./frontend
     container_name: simple-frontend
     ports:
