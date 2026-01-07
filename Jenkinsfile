@@ -10,7 +10,7 @@ pipeline {
         BACKEND_IMAGE = "gitops-backend"
         FRONTEND_IMAGE = "gitops-frontend"
 
-        GITOPS_REPO = "https://github.com/6510685016/gitops-repo.git"
+        GITOPS_REPO = "6510685016/gitops-repo"
     }
 
     triggers {
@@ -22,7 +22,7 @@ pipeline {
         stage('Build Docker Images (docker compose)') {
             steps {
                 sh '''
-                  export TAG=${TAG}
+                  echo "Building images with TAG=${TAG}"
                   docker compose build
                 '''
             }
@@ -31,31 +31,40 @@ pipeline {
         stage('Tag & Push Images to Nexus') {
             steps {
                 sh '''
-                docker tag gitops-backend:${TAG} localhost:8082/gitops-backend:${TAG}
-                docker tag gitops-frontend:${TAG} localhost:8082/gitops-frontend:${TAG}
+                  echo "Tag images"
+                  docker tag ${BACKEND_IMAGE}:${TAG} ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                  docker tag ${FRONTEND_IMAGE}:${TAG} ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
 
-                docker push localhost:8082/gitops-backend:${TAG}
-                docker push localhost:8082/gitops-frontend:${TAG}
+                  echo "Push to Nexus"
+                  docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                  docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                 '''
             }
         }
 
         stage('Update GitOps Repo') {
             steps {
-                sh '''
-                  rm -rf gitops
-                  git clone https://github.com/6510685016/gitops-repo.git gitops
-                  cd gitops
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-token',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
+                    sh '''
+                      rm -rf gitops
+                      git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/${GITOPS_REPO}.git gitops
+                      cd gitops
 
-                  sed -i "s|image:.*gitops-backend.*|image: localhost:8081/docker-hosted/gitops-backend:${TAG}|" apps/backend/deployment.yaml
-                  sed -i "s|image:.*gitops-frontend.*|image: localhost:8081/docker-hosted/gitops-frontend:${TAG}|" apps/frontend/deployment.yaml
+                      sed -i "s|image:.*gitops-backend.*|image: ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}|" apps/backend/deployment.yaml
+                      sed -i "s|image:.*gitops-frontend.*|image: ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}|" apps/frontend/deployment.yaml
 
-                  git config user.email "jenkins@local"
-                  git config user.name "jenkins"
-                  git add .
-                  git commit -m "Update images to ${TAG}"
-                  git push
-                '''
+                      git config user.email "jenkins@local"
+                      git config user.name "jenkins"
+
+                      git add .
+                      git commit -m "Update images to ${TAG}" || echo "No changes to commit"
+                      git push origin main
+                    '''
+                }
             }
         }
     }
