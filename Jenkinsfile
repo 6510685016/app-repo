@@ -4,7 +4,7 @@ pipeline {
     environment {
         TAG = "${BUILD_NUMBER}"
 
-        NEXUS_REGISTRY = "localhost:8081"
+        NEXUS_REGISTRY = "localhost:8082"
         NEXUS_REPO = "docker-hosted"
 
         BACKEND_IMAGE = "gitops-backend"
@@ -31,13 +31,11 @@ pipeline {
         stage('Tag & Push Images to Nexus') {
             steps {
                 sh '''
-                  echo "Tag images"
-                  docker tag ${BACKEND_IMAGE}:${TAG} ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-                  docker tag ${FRONTEND_IMAGE}:${TAG} ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                docker tag gitops-backend:${TAG} localhost:8082/docker-hosted/gitops-backend:${TAG}
+                docker tag gitops-frontend:${TAG} localhost:8082/docker-hosted/gitops-frontend:${TAG}
 
-                  echo "Push to Nexus"
-                  docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-                  docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                docker push localhost:8082/docker-hosted/gitops-backend:${TAG}
+                docker push localhost:8082/docker-hosted/gitops-frontend:${TAG}
                 '''
             }
         }
