@@ -52,21 +52,26 @@ pipeline {
             steps {
                 dir('frontend') {
                 sh '''
-                    rm -rf node_modules
-                    npm install
-                    trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    node:20-alpine \
+                    sh -c "npm install && npx trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
                 '''
                 }
             }
         }
 
+
         stage('Trivy Scan - Backend') {
             steps {
                 dir('backend') {
                 sh '''
-                    rm -rf node_modules
-                    npm install
-                    trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    node:20-alpine \
+                    sh -c "npm install && npx trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
                 '''
                 }
             }
