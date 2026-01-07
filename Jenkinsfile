@@ -61,17 +61,22 @@ pipeline {
             }
         }
 
-        stage('Tag & Push Images to Nexus') {
+        stage('Trivy Scan (Docker Images)') {
             steps {
                 sh '''
-                docker tag gitops-backend:${TAG} localhost:8082/docker-hosted/gitops-backend:${TAG}
-                docker tag gitops-frontend:${TAG} localhost:8082/docker-hosted/gitops-frontend:${TAG}
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:latest \
+                image --severity HIGH,CRITICAL --exit-code 1 gitops-backend:${TAG}
 
-                docker push localhost:8082/docker-hosted/gitops-backend:${TAG}
-                docker push localhost:8082/docker-hosted/gitops-frontend:${TAG}
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:latest \
+                image --severity HIGH,CRITICAL --exit-code 1 gitops-frontend:${TAG}
                 '''
             }
         }
+
 
         stage('Update GitOps Repo') {
             steps {
