@@ -48,7 +48,7 @@ pipeline {
         }
 
 
-        stage('Trivy Scan - Frontend') {
+        stage('Install Frontend Deps') {
             steps {
                 dir('frontend') {
                 sh '''
@@ -56,7 +56,23 @@ pipeline {
                     -v $PWD:/app \
                     -w /app \
                     node:20-alpine \
-                    sh -c "npm install && npx trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
+                    npm install
+                '''
+                }
+            }
+        }
+
+
+        stage('Trivy Scan - Frontend') {
+            steps {
+                dir('frontend') {
+                sh '''
+                    docker run --rm \
+                    -v $PWD:/scan \
+                    aquasec/trivy:latest \
+                    fs /scan \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 1
                 '''
                 }
             }
@@ -68,15 +84,15 @@ pipeline {
                 dir('backend') {
                 sh '''
                     docker run --rm \
-                    -v $PWD:/app \
-                    -w /app \
-                    node:20-alpine \
-                    sh -c "npm install && npx trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
+                    -v $PWD:/scan \
+                    aquasec/trivy:latest \
+                    fs /scan \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 1
                 '''
                 }
             }
         }
-
 
 
         stage('Update GitOps Repo') {
