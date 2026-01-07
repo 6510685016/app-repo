@@ -29,7 +29,7 @@ pipeline {
             steps {
                 sh '''
                   export TAG=${TAG}
-                  docker compose build
+                  docker-compose build
                 '''
             }
         }
