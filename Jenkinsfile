@@ -119,7 +119,7 @@ pipeline {
                         echo "🚀 Deploy Backend"
 
                         docker service update \
-                        --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                        --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
@@ -129,17 +129,17 @@ pipeline {
                         --name gitops-backend \
                         --replicas 2 \
                         --constraint 'node.role==worker' \
-                        --publish published=8765,target=5000 \
+                        -p 8765:5000 \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
-                        192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                        ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "🚀 Deploy Frontend"
 
                         docker service update \
-                        --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                        --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
@@ -149,12 +149,12 @@ pipeline {
                         --name gitops-frontend \
                         --replicas 2 \
                         --constraint 'node.role==worker' \
-                        --publish published=80,target=3000 \
+                        -p 80:3000 \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
-                        192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                        ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                         '''
 
                         sh '''
