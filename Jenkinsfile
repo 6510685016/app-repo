@@ -60,21 +60,6 @@ pipeline {
         }
 
 
-        stage('Install Frontend Deps') {
-            steps {
-                dir('frontend') {
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/app \
-                    -w /app \
-                    node:20-alpine \
-                    npm install
-                '''
-                }
-            }
-        }
-
-
         stage('Trivy Scan - Frontend') {
             steps {
                 dir('frontend') {
