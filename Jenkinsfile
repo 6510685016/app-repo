@@ -145,7 +145,7 @@ pipeline {
                         for i in $(seq 1 10); do
                         echo "Healthcheck attempt $i..."
 
-                        if curl -f http://localhost:8081/health; then
+                        if curl -f http://192.168.11.128:8081/health; then
                             echo "✅ Healthcheck passed"
                             exit 0
                         fi

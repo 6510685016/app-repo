@@ -12,6 +12,13 @@ app.get('/api/message', (req, res) => {
   });
 });
 
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
