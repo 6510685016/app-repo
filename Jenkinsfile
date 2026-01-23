@@ -50,9 +50,11 @@ pipeline {
                 -u "$NEXUS_USER" --password-stdin
 
                 docker build --no-cache \
+                --build-arg APP_VERSION=${TAG} \
                 -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} backend
 
                 docker build --no-cache \
+                --build-arg APP_VERSION=${TAG} \
                 -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} frontend
 
                 docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
