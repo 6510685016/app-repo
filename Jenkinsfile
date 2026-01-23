@@ -26,7 +26,7 @@ pipeline {
                         docker run --rm \
                         --network host \
                         -v "$PWD:/usr/src" \
-                        -w /usr/src/APP-REPO \
+                        -w /usr/src/app-repo \
                         sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=gitops-app \
                         -Dsonar.projectName=gitops-app \
