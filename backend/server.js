@@ -7,8 +7,10 @@ const PORT = 5000;
 app.use(cors());
 
 app.get('/api/message', (req, res) => {
+  const hostname = os.hostname();
   res.json({
-    message: 'Hello from Backend API 🚀'
+    message: 'Hello from Backend API 🚀',
+    hostname
   });
 });
 
