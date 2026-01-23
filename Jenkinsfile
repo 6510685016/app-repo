@@ -143,7 +143,7 @@ pipeline {
                         curl -f http://localhost:8081/health
                         '''
 
-                    catch (err) {
+                    } catch (err) {
                         echo "Force rollback services"
 
                         sh '''
