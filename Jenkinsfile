@@ -116,9 +116,13 @@ pipeline {
                         || docker service create \
                         --name gitops-backend \
                         --replicas 2 \
-                        --constraint 'node.role == worker' \
                         --endpoint-mode dnsrr \
-                        --publish mode=host,target=5000,published=8765 \
+                        --constraint 'node.role==worker' \
+                        --publish 8765:3000 \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
+                        --update-failure-action rollback \
+                        --update-order start-first \
                         192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "Deploy Frontend"
@@ -133,9 +137,11 @@ pipeline {
                         || docker service create \
                         --name gitops-frontend \
                         --replicas 2 \
-                        --constraint 'node.role == worker' \
                         --endpoint-mode dnsrr \
-                        --publish mode=host,target=3000,published=80 \
+                        --constraint 'node.role==worker' \
+                        --publish 80:3000 \
+                        --update-failure-action rollback \
+                        --update-order start-first \
                         192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                         '''
 
