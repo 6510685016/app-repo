@@ -103,7 +103,7 @@ pipeline {
                         echo "Deploy Backend"
 
                         docker service update \
-                            --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                            --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
                             --update-parallelism 1 \
                             --update-delay 10s \
                             --update-failure-action rollback \
@@ -113,15 +113,15 @@ pipeline {
                             --name gitops-backend \
                             --replicas 2 \
                             --constraint 'node.role == worker' \
-                            --publish 8081:3000 \
+                            --publish 100:5000 \
                             --update-failure-action rollback \
                             --update-order start-first \
-                            ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                            192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "Deploy Frontend"
 
                         docker service update \
-                            --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                            --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
                             --update-parallelism 1 \
                             --update-delay 10s \
                             --update-failure-action rollback \
@@ -134,7 +134,7 @@ pipeline {
                             --publish 80:3000 \
                             --update-failure-action rollback \
                             --update-order start-first \
-                            ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                            192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                         '''
 
                         sh '''
@@ -143,8 +143,14 @@ pipeline {
                         curl -f http://localhost:8081/health
                         '''
 
-                    } catch (err) {
-                        echo "❌ Deploy failed, Swarm should rollback automatically"
+                    catch (err) {
+                        echo "Force rollback services"
+
+                        sh '''
+                            docker service rollback gitops-backend || true
+                            docker service rollback gitops-frontend || true
+                        '''
+
                         currentBuild.result = 'FAILURE'
                         throw err
                     }
