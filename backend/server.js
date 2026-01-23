@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const os = require("os");
 
 const app = express();
 const PORT = 5000;
@@ -7,10 +8,10 @@ const PORT = 5000;
 app.use(cors());
 
 app.get('/api/message', (req, res) => {
-  const hostname = os.hostname();
   res.json({
-    message: 'Hello from Backend API 🚀',
-    hostname
+    message: "Hello from Backend API 🚀",
+    version: process.env.APP_VERSION || "unknown",
+    hostname: os.hostname(),
   });
 });
 
