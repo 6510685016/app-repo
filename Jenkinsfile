@@ -19,6 +19,17 @@ pipeline {
 
     stages {
 
+        stage('Debug Workspace') {
+            steps {
+                sh '''
+                pwd
+                ls -l
+                ls -l backend
+                ls -l frontend
+                '''
+            }
+        }
+
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv('sonarqube') {
