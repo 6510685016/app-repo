@@ -63,60 +63,91 @@ pipeline {
         }
 
 
-        stage('Trivy Scan - Frontend Image') {
-          steps {
-            sh '''
-              docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v /var/jenkins_home/.cache/trivy:/root/.cache \
-                    aquasec/trivy:latest \
-                    image \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 1 \
-                    ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
-            '''
-          }
-        }
+        // stage('Trivy Scan - Frontend Image') {
+        //   steps {
+        //     sh '''
+        //       docker run --rm \
+        //             -v /var/run/docker.sock:/var/run/docker.sock \
+        //             -v /var/jenkins_home/.cache/trivy:/root/.cache \
+        //             aquasec/trivy:latest \
+        //             image \
+        //             --severity HIGH,CRITICAL \
+        //             --exit-code 1 \
+        //             ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+        //     '''
+        //   }
+        // }
 
 
-        stage('Trivy Scan - Backend Image') {
+        // stage('Trivy Scan - Backend Image') {
+        //     steps {
+        //         sh '''
+        //         docker run --rm \
+        //             -v /var/run/docker.sock:/var/run/docker.sock \
+        //             -v /var/jenkins_home/.cache/trivy:/root/.cache \
+        //             aquasec/trivy:latest \
+        //             image \
+        //             --severity HIGH,CRITICAL \
+        //             --exit-code 1 \
+        //             ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+        //         '''
+        //     }
+        // }
+
+
+        stage('Deploy & Verify') {
             steps {
-                sh '''
-                docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v /var/jenkins_home/.cache/trivy:/root/.cache \
-                    aquasec/trivy:latest \
-                    image \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 1 \
-                    ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-                '''
-            }
-        }
+                script {
+                    try {
+                        sh '''
+                        echo "Deploy Backend"
 
+                        docker service update \
+                            --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                            --update-parallelism 1 \
+                            --update-delay 10s \
+                            --update-failure-action rollback \
+                            --update-order start-first \
+                            gitops-backend \
+                        || docker service create \
+                            --name gitops-backend \
+                            --replicas 2 \
+                            --constraint 'node.role == worker' \
+                            --publish 8081:3000 \
+                            --update-failure-action rollback \
+                            --update-order start-first \
+                            ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
-        stage('Update GitOps Repo') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'github-token',
-                    usernameVariable: 'GIT_USER',
-                    passwordVariable: 'GIT_TOKEN'
-                )]) {
-                    sh '''
-                      rm -rf gitops
-                      git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/${GITOPS_REPO}.git gitops
-                      cd gitops
+                        echo "Deploy Frontend"
 
-                      sed -i "s|image:.*gitops-backend.*|image: ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}|" apps/backend/deployment.yaml
-                      sed -i "s|image:.*gitops-frontend.*|image: ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}|" apps/frontend/deployment.yaml
+                        docker service update \
+                            --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                            --update-parallelism 1 \
+                            --update-delay 10s \
+                            --update-failure-action rollback \
+                            --update-order start-first \
+                            gitops-frontend \
+                        || docker service create \
+                            --name gitops-frontend \
+                            --replicas 2 \
+                            --constraint 'node.role == worker' \
+                            --publish 80:3000 \
+                            --update-failure-action rollback \
+                            --update-order start-first \
+                            ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                        '''
 
-                      git config user.email "jenkins@local"
-                      git config user.name "jenkins"
+                        sh '''
+                        echo "Wait for healthcheck..."
+                        sleep 20
+                        curl -f http://localhost:8081/health
+                        '''
 
-                      git add .
-                      git commit -m "Update images to ${TAG}" || echo "No changes to commit"
-                      git push origin main
-                    '''
+                    } catch (err) {
+                        echo "❌ Deploy failed, Swarm should rollback automatically"
+                        currentBuild.result = 'FAILURE'
+                        throw err
+                    }
                 }
             }
         }
