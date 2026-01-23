@@ -38,11 +38,14 @@ pipeline {
         }
 
 
-        stage('Build Docker Images (docker compose)') {
+        stage('Build Docker Images') {
             steps {
                 sh '''
-                  echo "Building images with TAG=${TAG}"
-                  docker compose build
+                docker build -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} backend
+                docker build -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} frontend
+        
+                docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                 '''
             }
         }
