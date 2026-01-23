@@ -23,20 +23,20 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        docker run --rm \
-                        --network host \
-                        -v "$PWD:/usr/src" \
-                        -w /usr/src \
-                        sonarsource/sonar-scanner-cli \
-                        -Dsonar.projectKey=gitops-app \
-                        -Dsonar.projectName=gitops-app \
-                        -Dsonar.branch.name=main \
-                        -Dsonar.sources=backend,frontend \
-                        -Dsonar.inclusions=backend/**/*.js,frontend/src/**/*.js \
-                        -Dsonar.exclusions=**/node_modules/**,**/Dockerfile \
-                        -Dsonar.sourceEncoding=UTF-8 \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.token=$SONAR_AUTH_TOKEN
+                    docker run --rm \
+                    --network host \
+                    -v "$PWD:/usr/src" \
+                    -w /usr/src/APP-REPO \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=gitops-app \
+                    -Dsonar.projectName=gitops-app \
+                    -Dsonar.branch.name=main \
+                    -Dsonar.sources=backend,frontend \
+                    -Dsonar.inclusions=backend/**/*.js,frontend/src/**/*.js \
+                    -Dsonar.exclusions=**/node_modules/**,**/Dockerfile \
+                    -Dsonar.sourceEncoding=UTF-8 \
+                    -Dsonar.host.url=http://localhost:9000 \
+                    -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
