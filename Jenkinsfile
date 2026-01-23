@@ -43,7 +43,6 @@ pipeline {
                         -Dsonar.projectName=gitops-app \
                         -Dsonar.branch.name=main \
                         -Dsonar.sources=backend,frontend \
-                        -Dsonar.inclusions=backend/**/*.js,frontend/src/**/*.js \
                         -Dsonar.exclusions=**/node_modules/**,**/Dockerfile \
                         -Dsonar.sourceEncoding=UTF-8 \
                         -Dsonar.host.url=http://localhost:9000 \
