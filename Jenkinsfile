@@ -39,29 +39,29 @@ pipeline {
 
 
         stage('Build & Push Docker Images') {
-        steps {
-            withCredentials([usernamePassword(
-            credentialsId: 'nexus-docker',
-            usernameVariable: 'NEXUS_USER',
-            passwordVariable: 'NEXUS_PASS'
-            )]) {
-            sh '''
-                echo "$NEXUS_PASS" | docker login localhost:8082 \
-                -u "$NEXUS_USER" --password-stdin
+            steps {
+                withCredentials([usernamePassword(
+                credentialsId: 'nexus-docker',
+                usernameVariable: 'NEXUS_USER',
+                passwordVariable: 'NEXUS_PASS'
+                )]) {
+                sh '''
+                    echo "$NEXUS_PASS" | docker login localhost:8082 \
+                    -u "$NEXUS_USER" --password-stdin
 
-                docker build --no-cache \
-                --build-arg APP_VERSION=${TAG} \
-                -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} backend
+                    docker build --no-cache \
+                    --build-arg APP_VERSION=${TAG} \
+                    -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} backend
 
-                docker build --no-cache \
-                --build-arg APP_VERSION=${TAG} \
-                -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} frontend
+                    docker build --no-cache \
+                    --build-arg APP_VERSION=${TAG} \
+                    -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} frontend
 
-                docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-                docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
-            '''
+                    docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                    docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                '''
+                }
             }
-        }
         }
 
 
@@ -97,81 +97,81 @@ pipeline {
         // }
 
 
-    stage('Deploy & Verify') {
-        steps {
-            script {
-                try {
-                    sh '''
-                    set -e
+        stage('Deploy & Verify') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                        set -e
 
-                    echo "🚀 Deploy Backend"
+                        echo "🚀 Deploy Backend"
 
-                    docker service update \
-                    --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
-                    --update-parallelism 1 \
-                    --update-delay 10s \
-                    --update-failure-action rollback \
-                    --update-order start-first \
-                    gitops-backend \
-                    || docker service create \
-                    --name gitops-backend \
-                    --replicas 2 \
-                    --constraint 'node.role == worker' \
-                    --endpoint-mode dnsrr \
-                    --publish mode=host,target=5000,published=8081 \
-                    192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                        docker service update \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        gitops-backend \
+                        || docker service create \
+                        --name gitops-backend \
+                        --replicas 2 \
+                        --constraint 'node.role == worker' \
+                        --endpoint-mode dnsrr \
+                        --publish mode=host,target=5000,published=8081 \
+                        192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
-                    echo "🚀 Deploy Frontend"
+                        echo "🚀 Deploy Frontend"
 
-                    docker service update \
-                    --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
-                    --update-parallelism 1 \
-                    --update-delay 10s \
-                    --update-failure-action rollback \
-                    --update-order start-first \
-                    gitops-frontend \
-                    || docker service create \
-                    --name gitops-frontend \
-                    --replicas 2 \
-                    --constraint 'node.role == worker' \
-                    --endpoint-mode dnsrr \
-                    --publish mode=host,target=3000,published=80 \
-                    192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
-                    '''
+                        docker service update \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        gitops-frontend \
+                        || docker service create \
+                        --name gitops-frontend \
+                        --replicas 2 \
+                        --constraint 'node.role == worker' \
+                        --endpoint-mode dnsrr \
+                        --publish mode=host,target=3000,published=80 \
+                        192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                        '''
 
-                    sh '''
-                    echo "🩺 Wait for backend healthcheck..."
+                        sh '''
+                        echo "🩺 Wait for backend healthcheck..."
 
-                    sleep 10
+                        sleep 10
 
-                    for i in $(seq 1 10); do
-                    echo "Healthcheck attempt $i..."
+                        for i in $(seq 1 10); do
+                        echo "Healthcheck attempt $i..."
 
-                    if curl -f http://192.168.11.128:8081/health; then
-                        echo "✅ Healthcheck passed"
-                        exit 0
-                    fi
+                        if curl -f http://192.168.11.128:8081/health; then
+                            echo "✅ Healthcheck passed"
+                            exit 0
+                        fi
 
-                    sleep 5
-                    done
+                        sleep 5
+                        done
 
-                    echo "❌ Healthcheck failed"
-                    exit 1
-                    '''
+                        echo "❌ Healthcheck failed"
+                        exit 1
+                        '''
 
-                } catch (err) {
-                    echo "❌ Deploy failed → Force rollback"
+                    } catch (err) {
+                        echo "❌ Deploy failed → Force rollback"
 
-                    sh '''
-                    docker service rollback gitops-backend || true
-                    docker service rollback gitops-frontend || true
-                    '''
+                        sh '''
+                        docker service rollback gitops-backend || true
+                        docker service rollback gitops-frontend || true
+                        '''
 
-                    currentBuild.result = 'FAILURE'
-                    throw err
+                        currentBuild.result = 'FAILURE'
+                        throw err
+                    }
                 }
             }
         }
     }
-
 }
