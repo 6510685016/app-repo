@@ -36,9 +36,12 @@ pipeline {
                     sh '''
                         docker run --rm \
                         --network host \
-                        -v "$PWD:/usr/src" \
+                        -v /var/jenkins_home/workspace/app:/usr/src \
                         -w /usr/src \
                         sonarsource/sonar-scanner-cli \
+                        -Dsonar.projectKey=gitops-app \
+                        -Dsonar.projectBaseDir=/usr/src \
+                        -Dsonar.sources=. \
                         -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
