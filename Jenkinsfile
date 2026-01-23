@@ -60,35 +60,32 @@ pipeline {
         }
 
 
-        stage('Trivy Scan - Frontend') {
-            steps {
-                dir('frontend') {
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/scan \
-                    aquasec/trivy:latest \
-                    fs /scan \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 1
-                '''
-                }
-            }
+        stage('Trivy Scan - Frontend Image') {
+          steps {
+            sh '''
+              docker run --rm \
+                aquasec/trivy:latest \
+                image \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                localhost:8082/docker-hosted/gitops-frontend:${TAG}
+            '''
+          }
         }
 
 
-        stage('Trivy Scan - Backend') {
-            steps {
-                dir('backend') {
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/scan \
-                    aquasec/trivy:latest \
-                    fs /scan \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 1
-                '''
-                }
-            }
+
+        stage('Trivy Scan - Backend Image') {
+          steps {
+            sh '''
+              docker run --rm \
+                aquasec/trivy:latest \
+                image \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                localhost:8082/docker-hosted/gitops-backend:${TAG}
+            '''
+          }
         }
 
 
