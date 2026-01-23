@@ -64,21 +64,22 @@ pipeline {
           steps {
             sh '''
               docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v /var/jenkins_home/.cache/trivy:/root/.cache \
                 aquasec/trivy:latest \
-                image \
-                --severity HIGH,CRITICAL \
-                --exit-code 1 \
-                localhost:8082/docker-hosted/gitops-frontend:${TAG}
+                image --severity HIGH,CRITICAL --exit-code 1 \
+                localhost:8082/docker-hosted/gitops-frontend:${BUILD_NUMBER}
             '''
           }
         }
-
 
 
         stage('Trivy Scan - Backend Image') {
           steps {
             sh '''
               docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v /var/jenkins_home/.cache/trivy:/root/.cache \
                 aquasec/trivy:latest \
                 image \
                 --severity HIGH,CRITICAL \
