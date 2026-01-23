@@ -104,7 +104,7 @@ pipeline {
                         sh '''
                         set -e
 
-                        echo "Deploy Backend"
+                        echo "🚀 Deploy Backend"
 
                         docker service update \
                         --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
@@ -116,16 +116,15 @@ pipeline {
                         || docker service create \
                         --name gitops-backend \
                         --replicas 2 \
-                        --endpoint-mode dnsrr \
                         --constraint 'node.role==worker' \
-                        --publish 8765:3000 \
+                        --publish published=8765,target=5000 \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
                         192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
-                        echo "Deploy Frontend"
+                        echo "🚀 Deploy Frontend"
 
                         docker service update \
                         --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
@@ -137,9 +136,10 @@ pipeline {
                         || docker service create \
                         --name gitops-frontend \
                         --replicas 2 \
-                        --endpoint-mode dnsrr \
                         --constraint 'node.role==worker' \
-                        --publish 80:3000 \
+                        --publish published=80,target=3000 \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
                         192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
