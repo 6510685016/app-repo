@@ -140,7 +140,7 @@ pipeline {
                         sh '''
                         echo "Wait for healthcheck..."
                         sleep 20
-                        curl -f http://localhost:8081/health
+                        curl -f http://192.168.11.128:8081/health
                         '''
 
                     } catch (err) {
