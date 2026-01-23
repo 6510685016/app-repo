@@ -100,55 +100,64 @@ pipeline {
                 script {
                     try {
                         sh '''
-                        echo "Deploy Backend"
+                        set -e
 
+                        echo "Deploy Backend"
                         docker service update \
-                            --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
-                            --update-parallelism 1 \
-                            --update-delay 10s \
-                            --update-failure-action rollback \
-                            --update-order start-first \
-                            gitops-backend \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        gitops-backend \
                         || docker service create \
-                            --name gitops-backend \
-                            --replicas 2 \
-                            --constraint 'node.role == worker' \
-                            --publish 100:5000 \
-                            --update-failure-action rollback \
-                            --update-order start-first \
-                            192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                        --name gitops-backend \
+                        --replicas 2 \
+                        --constraint 'node.role == worker' \
+                        --publish 8081:5000 \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "Deploy Frontend"
-
                         docker service update \
-                            --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
-                            --update-parallelism 1 \
-                            --update-delay 10s \
-                            --update-failure-action rollback \
-                            --update-order start-first \
-                            gitops-frontend \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                        --update-parallelism 1 \
+                        --update-delay 10s \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        gitops-frontend \
                         || docker service create \
-                            --name gitops-frontend \
-                            --replicas 2 \
-                            --constraint 'node.role == worker' \
-                            --publish 80:3000 \
-                            --update-failure-action rollback \
-                            --update-order start-first \
-                            192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                        --name gitops-frontend \
+                        --replicas 2 \
+                        --constraint 'node.role == worker' \
+                        --publish 80:3000 \
+                        --update-failure-action rollback \
+                        --update-order start-first \
+                        192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                         '''
 
                         sh '''
                         echo "Wait for healthcheck..."
-                        sleep 20
-                        curl -f http://192.168.11.128:8081/health
+                        for i in {1..10}; do
+                        if curl -f http://localhost:8081/health; then
+                            echo "Healthcheck passed"
+                            exit 0
+                        fi
+                        echo "Retry $i..."
+                        sleep 5
+                        done
+
+                        echo "Healthcheck failed"
+                        exit 1
                         '''
 
                     } catch (err) {
-                        echo "Force rollback services"
+                        echo "❌ Deploy failed → Force rollback"
 
                         sh '''
-                            docker service rollback gitops-backend || true
-                            docker service rollback gitops-frontend || true
+                        docker service rollback gitops-backend || true
+                        docker service rollback gitops-frontend || true
                         '''
 
                         currentBuild.result = 'FAILURE'
