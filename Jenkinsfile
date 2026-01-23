@@ -118,7 +118,7 @@ pipeline {
                         --replicas 2 \
                         --constraint 'node.role == worker' \
                         --endpoint-mode dnsrr \
-                        --publish mode=host,target=5000,published=8080 \
+                        --publish mode=host,target=5000,published=8765 \
                         192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "Deploy Frontend"
@@ -147,7 +147,7 @@ pipeline {
                         for i in $(seq 1 10); do
                         echo "Healthcheck attempt $i..."
 
-                        if curl -f http://192.168.11.128:8080/health; then
+                        if curl -f http://192.168.11.128:8765/health; then
                             echo "✅ Healthcheck passed"
                             exit 0
                         fi
