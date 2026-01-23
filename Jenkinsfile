@@ -119,7 +119,7 @@ pipeline {
                         echo "🚀 Deploy Backend"
 
                         docker service update \
-                        --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
@@ -134,12 +134,12 @@ pipeline {
                         --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
-                        ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
+                        192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
                         echo "🚀 Deploy Frontend"
 
                         docker service update \
-                        --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
+                        --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
                         --update-parallelism 1 \
                         --update-delay 10s \
                         --update-failure-action rollback \
@@ -154,7 +154,7 @@ pipeline {
                         --update-delay 10s \
                         --update-failure-action rollback \
                         --update-order start-first \
-                        ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                        192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
                         '''
 
                         sh '''
