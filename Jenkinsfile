@@ -104,7 +104,7 @@ pipeline {
                         sh '''
                         set -e
 
-                        echo "🚀 Deploy Backend"
+                        echo "Deploy Backend"
 
                         docker service update \
                         --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
@@ -118,10 +118,10 @@ pipeline {
                         --replicas 2 \
                         --constraint 'node.role == worker' \
                         --endpoint-mode dnsrr \
-                        --publish mode=host,target=5000,published=8081 \
+                        --publish mode=host,target=5000,published=8080 \
                         192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
 
-                        echo "🚀 Deploy Frontend"
+                        echo "Deploy Frontend"
 
                         docker service update \
                         --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
@@ -147,7 +147,7 @@ pipeline {
                         for i in $(seq 1 10); do
                         echo "Healthcheck attempt $i..."
 
-                        if curl -f http://192.168.11.128:8081/health; then
+                        if curl -f http://192.168.11.128:8080/health; then
                             echo "✅ Healthcheck passed"
                             exit 0
                         fi
@@ -175,3 +175,5 @@ pipeline {
         }
     }
 }
+
+//❌✅
