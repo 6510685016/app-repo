@@ -39,12 +39,6 @@ pipeline {
                         -v "$PWD:/usr/src" \
                         -w /usr/src \
                         sonarsource/sonar-scanner-cli \
-                        -Dsonar.projectKey=gitops-app \
-                        -Dsonar.projectName=gitops-app \
-                        -Dsonar.branch.name=main \
-                        -Dsonar.sources=backend,frontend \
-                        -Dsonar.exclusions=**/node_modules/**,**/Dockerfile \
-                        -Dsonar.sourceEncoding=UTF-8 \
                         -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
