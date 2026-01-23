@@ -138,17 +138,22 @@ pipeline {
                         '''
 
                         sh '''
-                        echo "Wait for healthcheck..."
-                        for i in {1..10}; do
+                        echo "Wait for backend healthcheck..."
+
+                        sleep 10
+
+                        for i in $(seq 1 10); do
+                        echo "Healthcheck attempt $i..."
+
                         if curl -f http://localhost:8081/health; then
-                            echo "Healthcheck passed"
+                            echo "✅ Healthcheck passed"
                             exit 0
                         fi
-                        echo "Retry $i..."
+
                         sleep 5
                         done
 
-                        echo "Healthcheck failed"
+                        echo "❌ Healthcheck failed"
                         exit 1
                         '''
 
