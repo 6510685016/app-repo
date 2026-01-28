@@ -28,6 +28,27 @@ pipeline {
             }
         }
 
+        stage('Debug Backend Path') {
+            steps {
+                sh '''
+                echo "=== Jenkins Workspace ==="
+                pwd
+                ls -l
+
+                echo "=== backend folder ==="
+                ls -l backend
+
+                echo "=== Docker view ==="
+                docker run --rm \
+                -v $WORKSPACE/backend:/usr/src \
+                -w /usr/src \
+                maven:3.9.9-eclipse-temurin-17 \
+                sh -c "pwd && ls -l"
+                '''
+            }
+        }
+
+
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv('sonarqube') {
