@@ -28,44 +28,25 @@ pipeline {
             }
         }
 
-        stage('Debug Backend Path') {
-            steps {
-                sh '''
-                echo "=== Jenkins Workspace ==="
-                pwd
-                ls -l
-
-                echo "=== backend folder ==="
-                ls -l backend
-
-                echo "=== Docker view ==="
-                docker run --rm \
-                -v $WORKSPACE/backend:/usr/src \
-                -w /usr/src \
-                maven:3.9.9-eclipse-temurin-17 \
-                sh -c "pwd && ls -l"
-                '''
-            }
-        }
-
 
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        docker run --rm \
-                        --network host \
-                        -v $WORKSPACE/backend:/usr/src \
-                        -w /usr/src \
-                        maven:3.9.9-eclipse-temurin-17 \
-                        mvn clean verify sonar:sonar \
-                            -Dsonar.projectKey=gitops-backend \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=$SONAR_AUTH_TOKEN
+                    docker run --rm \
+                    --network host \
+                    -v $WORKSPACE:/workspace \
+                    -w /workspace/backend \
+                    maven:3.9.9-eclipse-temurin-17 \
+                    mvn clean verify sonar:sonar \
+                        -Dsonar.projectKey=gitops-backend \
+                        -Dsonar.host.url=http://localhost:9000 \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
+
 
         stage('Build & Push Docker Image') {
             steps {
