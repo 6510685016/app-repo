@@ -34,6 +34,7 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                     cd backend
+                    chmod +x mvnw
                     ./mvnw clean verify sonar:sonar \
                     -Dsonar.projectKey=gitops-backend \
                     -Dsonar.host.url=http://localhost:9000 \
@@ -43,6 +44,13 @@ pipeline {
             }
         }
 
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
         stage('Build & Push Docker Image') {
             steps {
