@@ -4,7 +4,7 @@ pipeline {
     environment {
         TAG = "${BUILD_NUMBER}"
 
-        NEXUS_REGISTRY = "localhost:8082"
+        NEXUS_REGISTRY = "192.168.11.128:8082"
         NEXUS_REPO = "docker-hosted"
 
         BACKEND_IMAGE = "gitops-backend"
