@@ -33,15 +33,11 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    docker run --rm \
-                    --network host \
-                    -v $WORKSPACE:/workspace \
-                    -w /workspace/backend \
-                    maven:3.9.9-eclipse-temurin-17 \
-                    mvn clean verify sonar:sonar \
-                        -Dsonar.projectKey=gitops-backend \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
+                    cd backend
+                    ./mvnw clean verify sonar:sonar \
+                    -Dsonar.projectKey=gitops-backend \
+                    -Dsonar.host.url=http://localhost:9000 \
+                    -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
