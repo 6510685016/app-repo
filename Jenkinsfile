@@ -32,7 +32,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    docker run --rm \
+                        docker run --rm \
                         --network host \
                         -v $WORKSPACE/backend:/usr/src \
                         -w /usr/src \
