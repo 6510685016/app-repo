@@ -33,14 +33,14 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                     docker run --rm \
-                      --network host \
-                      -v $WORKSPACE/backend:/usr/src \
-                      -w /usr/src \
-                      sonarsource/sonar-scanner-cli \
-                      -Dsonar.projectKey=gitops-backend \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=http://localhost:9000 \
-                      -Dsonar.token=$SONAR_AUTH_TOKEN
+                        --network host \
+                        -v $WORKSPACE/backend:/usr/src \
+                        -w /usr/src \
+                        maven:3.9.9-eclipse-temurin-17 \
+                        mvn clean verify sonar:sonar \
+                            -Dsonar.projectKey=gitops-backend \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
