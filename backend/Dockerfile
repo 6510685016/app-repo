@@ -1,19 +1,23 @@
-FROM node:20-alpine
+# ===== Build stage =====
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+WORKDIR /app
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+RUN ./mvnw -B dependency:go-offline
 
-ARG APP_VERSION=dev
-ENV APP_VERSION=${APP_VERSION}
+COPY src src
+RUN ./mvnw -B clean package -DskipTests
 
+# ===== Runtime stage =====
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY --from=builder /app/target/*.jar app.jar
 
-RUN npm ci --omit=dev
+EXPOSE 8080
 
-COPY . .
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-EXPOSE 5000
-
-HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
-  CMD wget -qO- http://localhost:5000/health || exit 1
-
-CMD ["npm", "start"]
+ENTRYPOINT ["java","-jar","app.jar"]

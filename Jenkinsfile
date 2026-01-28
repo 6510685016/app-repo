@@ -8,7 +8,6 @@ pipeline {
         NEXUS_REPO = "docker-hosted"
 
         BACKEND_IMAGE = "gitops-backend"
-        FRONTEND_IMAGE = "gitops-frontend"
 
         GITOPS_REPO = "6510685016/gitops-repo"
     }
@@ -25,7 +24,6 @@ pipeline {
                 pwd
                 ls -l
                 ls -l backend
-                ls -l frontend
                 '''
             }
         }
@@ -34,80 +32,40 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        docker run --rm \
-                        --network host \
-                        -v /var/jenkins_home/workspace/app:/usr/src \
-                        -w /usr/src \
-                        sonarsource/sonar-scanner-cli \
-                        -Dsonar.projectKey=gitops-app \
-                        -Dsonar.projectBaseDir=/usr/src \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.token=$SONAR_AUTH_TOKEN
+                    docker run --rm \
+                      --network host \
+                      -v $WORKSPACE/backend:/usr/src \
+                      -w /usr/src \
+                      sonarsource/sonar-scanner-cli \
+                      -Dsonar.projectKey=gitops-backend \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=http://localhost:9000 \
+                      -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
 
-
-        stage('Build & Push Docker Images') {
+        stage('Build & Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(
-                credentialsId: 'nexus-docker',
-                usernameVariable: 'NEXUS_USER',
-                passwordVariable: 'NEXUS_PASS'
+                    credentialsId: 'nexus-docker',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
                 )]) {
-                sh '''
-                    echo "$NEXUS_PASS" | docker login localhost:8082 \
-                    -u "$NEXUS_USER" --password-stdin
+                    sh '''
+                    echo "$NEXUS_PASS" | docker login ${NEXUS_REGISTRY} \
+                      -u "$NEXUS_USER" --password-stdin
 
                     docker build --no-cache \
-                    --build-arg APP_VERSION=${TAG} \
-                    -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} backend
-
-                    docker build --no-cache \
-                    --build-arg APP_VERSION=${TAG} \
-                    -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} frontend
+                      -t ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                      backend
 
                     docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-                    docker push ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
-                '''
+                    '''
                 }
             }
         }
-
-
-        // stage('Trivy Scan - Frontend Image') {
-        //   steps {
-        //     sh '''
-        //       docker run --rm \
-        //             -v /var/run/docker.sock:/var/run/docker.sock \
-        //             -v /var/jenkins_home/.cache/trivy:/root/.cache \
-        //             aquasec/trivy:latest \
-        //             image \
-        //             --severity HIGH,CRITICAL \
-        //             --exit-code 1 \
-        //             ${NEXUS_REGISTRY}/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
-        //     '''
-        //   }
-        // }
-
-
-        // stage('Trivy Scan - Backend Image') {
-        //     steps {
-        //         sh '''
-        //         docker run --rm \
-        //             -v /var/run/docker.sock:/var/run/docker.sock \
-        //             -v /var/jenkins_home/.cache/trivy:/root/.cache \
-        //             aquasec/trivy:latest \
-        //             image \
-        //             --severity HIGH,CRITICAL \
-        //             --exit-code 1 \
-        //             ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-        //         '''
-        //     }
-        // }
-
 
         stage('Deploy & Verify') {
             steps {
@@ -116,61 +74,41 @@ pipeline {
                         sh '''
                         set -e
 
-                        echo "🚀 Deploy Backend"
+                        echo "🚀 Deploy Spring Boot Backend"
 
                         docker service update \
-                        --image 192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
-                        --update-parallelism 1 \
-                        --update-delay 10s \
-                        --update-failure-action rollback \
-                        --update-order start-first \
-                        gitops-backend \
+                          --image ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG} \
+                          --update-parallelism 1 \
+                          --update-delay 10s \
+                          --update-failure-action rollback \
+                          --update-order start-first \
+                          gitops-backend \
                         || docker service create \
-                        --name gitops-backend \
-                        --replicas 2 \
-                        --constraint 'node.role==worker' \
-                        -p 8765:5000 \
-                        --update-parallelism 1 \
-                        --update-delay 10s \
-                        --update-failure-action rollback \
-                        --update-order start-first \
-                        192.168.11.128:8082/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
-
-                        echo "🚀 Deploy Frontend"
-
-                        docker service update \
-                        --image 192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG} \
-                        --update-parallelism 1 \
-                        --update-delay 10s \
-                        --update-failure-action rollback \
-                        --update-order start-first \
-                        gitops-frontend \
-                        || docker service create \
-                        --name gitops-frontend \
-                        --replicas 2 \
-                        --constraint 'node.role==worker' \
-                        -p 80:3000 \
-                        --update-parallelism 1 \
-                        --update-delay 10s \
-                        --update-failure-action rollback \
-                        --update-order start-first \
-                        192.168.11.128:8082/${NEXUS_REPO}/${FRONTEND_IMAGE}:${TAG}
+                          --name gitops-backend \
+                          --replicas 2 \
+                          --constraint 'node.role==worker' \
+                          -p 8765:8080 \
+                          --update-parallelism 1 \
+                          --update-delay 10s \
+                          --update-failure-action rollback \
+                          --update-order start-first \
+                          ${NEXUS_REGISTRY}/${NEXUS_REPO}/${BACKEND_IMAGE}:${TAG}
                         '''
 
                         sh '''
-                        echo "🩺 Wait for backend healthcheck..."
+                        echo "🩺 Wait for Spring Boot healthcheck..."
 
-                        sleep 10
+                        sleep 15
 
                         for i in $(seq 1 10); do
-                        echo "Healthcheck attempt $i..."
+                          echo "Healthcheck attempt $i..."
 
-                        if curl -f http://192.168.11.128:8765/health; then
+                          if curl -f http://192.168.11.128:8765/actuator/health; then
                             echo "✅ Healthcheck passed"
                             exit 0
-                        fi
+                          fi
 
-                        sleep 5
+                          sleep 5
                         done
 
                         echo "❌ Healthcheck failed"
@@ -178,11 +116,10 @@ pipeline {
                         '''
 
                     } catch (err) {
-                        echo "❌ Deploy failed → Force rollback"
+                        echo "❌ Deploy failed → Rollback"
 
                         sh '''
                         docker service rollback gitops-backend || true
-                        docker service rollback gitops-frontend || true
                         '''
 
                         currentBuild.result = 'FAILURE'
@@ -193,5 +130,3 @@ pipeline {
         }
     }
 }
-
-//❌✅
